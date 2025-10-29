@@ -36,6 +36,9 @@ export default class LevelGenerator {
         // Generate powerups
         const powerups = this.generatePowerups(levelNumber, platforms);
         
+        // Generate decorative clouds
+        const clouds = this.generateClouds(levelNumber, theme);
+        
         // Close PR button position (at the end)
         const closePRButton = {
             x: LEVEL.WIDTH - 100,
@@ -51,6 +54,7 @@ export default class LevelGenerator {
             enemies: enemies,
             collectibles: collectibles,
             powerups: powerups,
+            clouds: clouds,
             closePRButton: closePRButton,
             timeLimit: LEVEL.TIME_LIMIT,
             isBossLevel: LEVEL.BOSS_LEVELS.includes(levelNumber)
@@ -59,6 +63,13 @@ export default class LevelGenerator {
 
     generatePlatforms(levelNumber, difficulty) {
         const platforms = [];
+        
+        // Player jump physics calculation
+        // With JUMP_VELOCITY = -330 and GRAVITY = 800:
+        // Max jump height ≈ 68 pixels
+        // Max horizontal distance at speed 160 ≈ 200 pixels
+        const MAX_JUMP_HEIGHT = 70;
+        const MAX_JUMP_DISTANCE = 180; // Conservative to ensure reachability
         
         // Ground platform (start)
         platforms.push({
@@ -71,10 +82,10 @@ export default class LevelGenerator {
         
         // Calculate platform parameters based on difficulty
         const numPlatforms = 15 + Math.floor(difficulty * 10); // 15-25 platforms
-        const minGap = 100 - difficulty * 30; // Gap decreases with difficulty
-        const maxGap = 200 - difficulty * 50;
-        const minHeight = 100;
-        const maxHeight = 400;
+        const minGap = 60 + difficulty * 20; // Gap increases with difficulty but stays jumpable
+        const maxGap = MAX_JUMP_DISTANCE - 40; // Leave margin for safety
+        const minHeight = 200; // Lower bound for visibility
+        const maxHeight = 500; // Keep platforms from being too high
         
         let currentX = 500;
         let currentY = 500;
@@ -82,21 +93,36 @@ export default class LevelGenerator {
         for (let i = 0; i < numPlatforms; i++) {
             // Random gap and height variation
             const gap = minGap + this.random() * (maxGap - minGap);
-            const heightChange = (this.random() - 0.5) * 100;
+            const heightChange = (this.random() - 0.5) * 80; // Reduced for smoother progression
             const platformWidth = 80 + this.random() * 120; // 80-200 width
             
-            currentX += gap + platformWidth;
-            currentY = Math.max(minHeight, Math.min(maxHeight, currentY + heightChange));
+            // Calculate new position
+            const newX = currentX + gap + platformWidth;
+            let newY = currentY + heightChange;
+            
+            // Ensure height change is within jump capability
+            if (newY < currentY - MAX_JUMP_HEIGHT) {
+                newY = currentY - MAX_JUMP_HEIGHT + 10; // +10 for margin
+            }
+            if (newY > currentY + MAX_JUMP_HEIGHT) {
+                newY = currentY + MAX_JUMP_HEIGHT - 10; // -10 for margin
+            }
+            
+            // Keep within bounds
+            newY = Math.max(minHeight, Math.min(maxHeight, newY));
             
             // Ensure platforms are within level bounds
-            if (currentX < LEVEL.WIDTH - 300) {
+            if (newX < LEVEL.WIDTH - 300) {
                 platforms.push({
-                    x: currentX,
-                    y: currentY,
+                    x: newX,
+                    y: newY,
                     width: platformWidth,
                     height: 20,
                     type: 'elevated'
                 });
+                
+                currentX = newX;
+                currentY = newY;
             }
         }
         
@@ -208,6 +234,32 @@ export default class LevelGenerator {
         }
         
         return powerups;
+    }
+
+    generateClouds(levelNumber, theme) {
+        const clouds = [];
+        
+        // More clouds for SF Bay theme
+        const numClouds = theme === 'sf-bay' ? 15 : 8;
+        
+        // Distribute clouds across the level
+        for (let i = 0; i < numClouds; i++) {
+            const x = (LEVEL.WIDTH / numClouds) * i + this.random() * 300;
+            const y = 50 + this.random() * 150; // Upper portion of screen
+            const width = 60 + this.random() * 80; // 60-140 width
+            const height = 30 + this.random() * 30; // 30-60 height
+            const opacity = 0.15 + this.random() * 0.25; // 0.15-0.4 opacity
+            
+            clouds.push({
+                x: x,
+                y: y,
+                width: width,
+                height: height,
+                opacity: opacity
+            });
+        }
+        
+        return clouds;
     }
 
     // Simple seeded random number generator for reproducibility

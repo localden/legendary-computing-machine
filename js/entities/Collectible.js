@@ -58,6 +58,9 @@ export default class Collectible extends Phaser.Physics.Arcade.Sprite {
         const currentScore = this.scene.registry.get('score') || 0;
         this.scene.registry.set('score', currentScore + this.pointValue);
 
+        // Create sparkle particles
+        this.createSparkleEffect();
+
         // Play collection effect
         this.scene.tweens.add({
             targets: this,
@@ -73,5 +76,33 @@ export default class Collectible extends Phaser.Physics.Arcade.Sprite {
 
         // Optional: play sound effect here
         // this.scene.sound.play('collect');
+    }
+
+    createSparkleEffect() {
+        // Create simple particle burst effect
+        const colors = [0xFFD700, 0xFFFFFF, 0xFFA500];
+        
+        for (let i = 0; i < 8; i++) {
+            const angle = (Math.PI * 2 * i) / 8;
+            const distance = 30;
+            const endX = this.x + Math.cos(angle) * distance;
+            const endY = this.y + Math.sin(angle) * distance;
+            
+            const particle = this.scene.add.graphics();
+            particle.fillStyle(colors[i % colors.length], 1);
+            particle.fillCircle(this.x, this.y, 2);
+            
+            this.scene.tweens.add({
+                targets: particle,
+                x: endX,
+                y: endY,
+                alpha: 0,
+                duration: 400,
+                ease: 'Power2',
+                onComplete: () => {
+                    particle.destroy();
+                }
+            });
+        }
     }
 }

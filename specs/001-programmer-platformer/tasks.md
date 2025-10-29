@@ -88,13 +88,13 @@ All files at repository root per plan.md structure:
 
 ### Implementation for User Story 2
 
-- [ ] T027 [US2] Add lives display to GameScene.js HUD (top-left corner near health meter)
-- [ ] T028 [US2] Implement abyss/pit detection in GameScene.js using world bounds check (player.y > LEVEL.HEIGHT)
-- [ ] T029 [US2] Implement player respawn in GameScene.js to reset position to level start while preserving timer state
-- [ ] T030 [US2] Add life loss logic to Player.js die() method with respawn callback or game over check
-- [ ] T031 [US2] Integrate HealthManager.js with Player.js to manage lives count and game over state
-- [ ] T032 [US2] Implement game over transition from GameScene.js to GameOverScene.js when lives reach zero
-- [ ] T033 [US2] Add retry functionality in GameOverScene.js to restart level 1 with reset lives/health/score
+- [X] T027 [US2] Add lives display to GameScene.js HUD (top-left corner near health meter)
+- [X] T028 [US2] Implement abyss/pit detection in GameScene.js using world bounds check (player.y > LEVEL.HEIGHT)
+- [X] T029 [US2] Implement player respawn in GameScene.js to reset position to level start while preserving timer state
+- [X] T030 [US2] Add life loss logic to Player.js die() method with respawn callback or game over check
+- [X] T031 [US2] Integrate HealthManager.js with Player.js to manage lives count and game over state
+- [X] T032 [US2] Implement game over transition from GameScene.js to GameOverScene.js when lives reach zero
+- [X] T033 [US2] Add retry functionality in GameOverScene.js to restart level 1 with reset lives/health/score
 
 **Checkpoint**: At this point, User Stories 1 AND 2 should both work independently
 
@@ -108,19 +108,19 @@ All files at repository root per plan.md structure:
 
 ### Implementation for User Story 3
 
-- [ ] T034 [P] [US3] Create js/entities/Enemy.js base class extending Phaser.Physics.Arcade.Sprite with health, movement patterns, damage properties
-- [ ] T035 [P] [US3] Create js/entities/Bug.js extending Enemy.js with patrol movement (health: 1, speed: 40, stompable)
-- [ ] T036 [P] [US3] Create js/entities/MergeConflict.js extending Enemy.js with jump pattern movement (health: 2, speed: 60, jump interval: 2s)
-- [ ] T037 [US3] Add health meter display to GameScene.js HUD (top-left corner using Phaser.GameObjects.Graphics bar)
-- [ ] T038 [US3] Implement enemy spawning in GameScene.js create() method using level data from LevelGenerator (Bug and MergeConflict types)
-- [ ] T039 [US3] Implement autonomous enemy movement in Enemy.js preUpdate() method (patrol pattern with left/right boundaries)
-- [ ] T040 [US3] Implement jump pattern for MergeConflict.js using Phaser.Time.TimerEvent for periodic jumps
-- [ ] T041 [US3] Add player-enemy collision detection in GameScene.js using this.physics.add.collider() with directional check
-- [ ] T042 [US3] Implement player damage logic in Player.js takeDamage() method (reduce health, trigger invincibility frames)
-- [ ] T043 [US3] Implement stomp mechanic in GameScene.js collision callback (if player.y < enemy.y, defeat enemy, else damage player)
-- [ ] T044 [US3] Add invincibility visual feedback to Player.js (sprite flashing for 1000ms after hit)
-- [ ] T045 [US3] Implement enemy death in Enemy.js die() method (remove sprite, play effect)
-- [ ] T046 [US3] Add health-to-life loss integration: when health reaches zero, call Player.js die() to lose life and respawn with full health
+- [X] T034 [P] [US3] Create js/entities/Enemy.js base class extending Phaser.Physics.Arcade.Sprite with health, movement patterns, damage properties
+- [X] T035 [P] [US3] Create js/entities/Bug.js extending Enemy.js with patrol movement (health: 1, speed: 40, stompable)
+- [X] T036 [P] [US3] Create js/entities/MergeConflict.js extending Enemy.js with jump pattern movement (health: 2, speed: 60, jump interval: 2s)
+- [X] T037 [US3] Add health meter display to GameScene.js HUD (top-left corner using Phaser.GameObjects.Graphics bar)
+- [X] T038 [US3] Implement enemy spawning in GameScene.js create() method using level data from LevelGenerator (Bug and MergeConflict types)
+- [X] T039 [US3] Implement autonomous enemy movement in Enemy.js preUpdate() method (patrol pattern with left/right boundaries)
+- [X] T040 [US3] Implement jump pattern for MergeConflict.js using Phaser.Time.TimerEvent for periodic jumps
+- [X] T041 [US3] Add player-enemy collision detection in GameScene.js using this.physics.add.collider() with directional check
+- [X] T042 [US3] Implement player damage logic in Player.js takeDamage() method (reduce health, trigger invincibility frames)
+- [X] T043 [US3] Implement stomp mechanic in GameScene.js collision callback (if player.y < enemy.y, defeat enemy, else damage player)
+- [X] T044 [US3] Add invincibility visual feedback to Player.js (sprite flashing for 1000ms after hit)
+- [X] T045 [US3] Implement enemy death in Enemy.js die() method (remove sprite, play effect)
+- [X] T046 [US3] Add health-to-life loss integration: when health reaches zero, call Player.js die() to lose life and respawn with full health
 
 **Checkpoint**: All core gameplay mechanics (movement, collection, enemies, health, lives) are now functional
 
@@ -134,15 +134,15 @@ All files at repository root per plan.md structure:
 
 ### Implementation for User Story 4
 
-- [ ] T047 [US4] Enhance LevelGenerator.js to assign unique themes to each of 10 levels (themes: dev-conference, office-buildings, sf-bay, coffee-shops)
-- [ ] T048 [US4] Implement level theme rendering in GameScene.js using different background colors and platform colors per theme
-- [ ] T049 [US4] Add level progression tracking to registry in GameScene.js (currentLevel counter)
-- [ ] T050 [US4] Implement level completion transition from GameScene.js to next level (increment currentLevel, restart GameScene with new level data)
-- [ ] T051 [US4] Add level number display to GameScene.js HUD (e.g., "Level 3/10")
-- [ ] T052 [US4] Implement level 10 completion detection in GameScene.js to transition to VictoryScene.js instead of next level
-- [ ] T053 [US4] Update VictoryScene.js to display final score, total time, and option to restart game from level 1
-- [ ] T054 [US4] Add level variety to LevelGenerator.js (vary platform counts, lengths, heights, gap sizes) while maintaining solvability
-- [ ] T055 [US4] Test static generation: verify each level generates identically on multiple playthroughs (seed-based or store generated data)
+- [X] T047 [US4] Enhance LevelGenerator.js to assign unique themes to each of 10 levels (themes: dev-conference, office-buildings, sf-bay, coffee-shops)
+- [X] T048 [US4] Implement level theme rendering in GameScene.js using different background colors and platform colors per theme
+- [X] T049 [US4] Add level progression tracking to registry in GameScene.js (currentLevel counter)
+- [X] T050 [US4] Implement level completion transition from GameScene.js to next level (increment currentLevel, restart GameScene with new level data)
+- [X] T051 [US4] Add level number display to GameScene.js HUD (e.g., "Level 3/10")
+- [X] T052 [US4] Implement level 10 completion detection in GameScene.js to transition to VictoryScene.js instead of next level
+- [X] T053 [US4] Update VictoryScene.js to display final score, total time, and option to restart game from level 1
+- [X] T054 [US4] Add level variety to LevelGenerator.js (vary platform counts, lengths, heights, gap sizes) while maintaining solvability
+- [X] T055 [US4] Test static generation: verify each level generates identically on multiple playthroughs (seed-based or store generated data)
 
 **Checkpoint**: All 10 levels playable with progression and distinct themes
 
@@ -156,15 +156,15 @@ All files at repository root per plan.md structure:
 
 ### Implementation for User Story 5
 
-- [ ] T056 [US5] Create js/entities/SecurityBoss.js extending Enemy.js with boss properties (health: 10, speed: 80, damage: 2, not stompable)
-- [ ] T057 [US5] Implement boss chase movement pattern in SecurityBoss.js (track player when within detectionRange: 400 pixels)
-- [ ] T058 [US5] Implement boss special attack in SecurityBoss.js using Phaser.Time.TimerEvent for periodic attacks (3s cooldown)
-- [ ] T059 [US5] Add boss health bar display in GameScene.js (visible bar at top-center when boss is active)
-- [ ] T060 [US5] Modify LevelGenerator.js to spawn SecurityBoss on levels 3, 6, 9 instead of regular enemies
-- [ ] T061 [US5] Add boss defeat condition in GameScene.js: boss must be hit multiple times (10 hits) to defeat, not stompable
-- [ ] T062 [US5] Implement player projectile or melee attack mechanic for boss battles (e.g., Space bar to attack when near boss)
-- [ ] T063 [US5] Add boss defeat animation and level completion when boss health reaches zero
-- [ ] T064 [US5] Update boss visual appearance (larger sprite, distinct color 0x8B00FF) to differentiate from regular enemies
+- [X] T056 [US5] Create js/entities/SecurityBoss.js extending Enemy.js with boss properties (health: 10, speed: 80, damage: 2, not stompable)
+- [X] T057 [US5] Implement boss chase movement pattern in SecurityBoss.js (track player when within detectionRange: 400 pixels)
+- [X] T058 [US5] Implement boss special attack in SecurityBoss.js using Phaser.Time.TimerEvent for periodic attacks (3s cooldown)
+- [X] T059 [US5] Add boss health bar display in GameScene.js (visible bar at top-center when boss is active)
+- [X] T060 [US5] Modify LevelGenerator.js to spawn SecurityBoss on levels 3, 6, 9 instead of regular enemies
+- [X] T061 [US5] Add boss defeat condition in GameScene.js: boss must be hit multiple times (10 hits) to defeat, not stompable
+- [X] T062 [US5] Implement player projectile or melee attack mechanic for boss battles (e.g., Space bar to attack when near boss)
+- [X] T063 [US5] Add boss defeat animation and level completion when boss health reaches zero
+- [X] T064 [US5] Update boss visual appearance (larger sprite, distinct color 0x8B00FF) to differentiate from regular enemies
 
 **Checkpoint**: Boss battles at levels 3, 6, 9 are functional with unique mechanics
 
@@ -201,21 +201,21 @@ All files at repository root per plan.md structure:
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [ ] T079 [P] Add coyote time (100ms grace period after leaving platform) to Player.js canJump() method
-- [ ] T080 [P] Add jump buffer (100ms input buffer for jump presses) to Player.js input handling
-- [ ] T081 [P] Implement camera follow in GameScene.js using this.cameras.main.startFollow(player)
-- [ ] T082 [P] Add smooth camera lerp in GameScene.js for smoother scrolling (lerp: 0.1)
-- [ ] T083 [P] Optimize rendering: use Phaser static groups for platforms to reduce draw calls
-- [ ] T084 [P] Add visual polish: platform shadows, particle effects on jump/stomp, coffee cup sparkle animation
-- [ ] T085 [P] Implement high score persistence in ScoreManager.js: save top 10 scores to LocalStorage with date/level
-- [ ] T086 [P] Add high score display to MenuScene.js and VictoryScene.js
+- [X] T079 [P] Add coyote time (100ms grace period after leaving platform) to Player.js canJump() method
+- [X] T080 [P] Add jump buffer (100ms input buffer for jump presses) to Player.js input handling
+- [X] T081 [P] Implement camera follow in GameScene.js using this.cameras.main.startFollow(player)
+- [X] T082 [P] Add smooth camera lerp in GameScene.js for smoother scrolling (lerp: 0.1)
+- [X] T083 [P] Optimize rendering: use Phaser static groups for platforms to reduce draw calls
+- [X] T084 [P] Add visual polish: platform shadows, particle effects on jump/stomp, coffee cup sparkle animation
+- [X] T085 [P] Implement high score persistence in ScoreManager.js: save top 10 scores to LocalStorage with date/level
+- [X] T086 [P] Add high score display to MenuScene.js and VictoryScene.js
 - [ ] T087 [P] Improve enemy patrol AI in Enemy.js: smooth direction changes, edge detection to prevent falling off platforms
 - [ ] T088 [P] Add sprite animations: player walk cycle, enemy movement, powerup rotation/pulse effects using Phaser.GameObjects.Graphics transformations
 - [ ] T089 [P] Implement world bounds padding in GameScene.js to prevent camera showing outside level boundaries
-- [ ] T090 [P] Add visual feedback for damage: screen shake on hit, red flash overlay
-- [ ] T091 [P] Add level transition effects in GameScene.js: fade in/out between levels
-- [ ] T092 [P] Optimize level generation in LevelGenerator.js: cache generated levels in registry, reuse on replay
-- [ ] T093 [P] Add browser tab visibility handling: pause game when tab loses focus
+- [X] T090 [P] Add visual feedback for damage: screen shake on hit, red flash overlay
+- [X] T091 [P] Add level transition effects in GameScene.js: fade in/out between levels
+- [X] T092 [P] Optimize level generation in LevelGenerator.js: cache generated levels in registry, reuse on replay
+- [X] T093 [P] Add browser tab visibility handling: pause game when tab loses focus
 - [ ] T094 Performance optimization: profile with Phaser debug mode, ensure 60 FPS on target browsers
 - [ ] T095 Cross-browser testing: verify game runs in Chrome, Firefox, Edge, Safari (latest 2 versions)
 - [ ] T096 Accessibility: add keyboard focus indicators, ensure all controls are keyboard-accessible
