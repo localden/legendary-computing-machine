@@ -1,29 +1,33 @@
 <!--
 Sync Impact Report - Constitution Update
 =========================================
-Version Change: 1.0.0 → 2.0.0
-Bump Rationale: MAJOR version - removed Test-First principle (Principle V)
+Version Change: 2.0.0 → 3.0.0
+Bump Rationale: MAJOR version - modified Principle I to allow game framework dependencies
 
 Modified Principles: 
-  - Removed: V. Test-First for Game Logic
+  - Modified: I. Minimal Dependencies - Added exception for established game frameworks
 
-Added Sections: N/A
+Added Sections: 
+  - Core Principles: Exception clause for game frameworks in Principle I
 
-Removed Sections:
-  - Core Principles: Principle V (Test-First for Game Logic)
-  - Development Standards: Testing Philosophy section removed
+Removed Sections: N/A
 
 Templates Requiring Updates:
-  ✅ .specify/templates/plan-template.md - Constitution Check may need adjustment
-  ✅ .specify/templates/spec-template.md - Testing sections remain optional
-  ✅ .specify/templates/tasks-template.md - Test tasks already marked optional
-  ⚠ Future: Monitor if lack of testing discipline causes quality issues
+  ✅ .specify/templates/plan-template.md - Constitution Check may need to verify framework choice
+  ✅ specs/001-programmer-platformer/research.md - MUST be updated to reflect Phaser.js decision
+  ✅ specs/001-programmer-platformer/plan.md - Technical Context needs framework update
+  ✅ specs/001-programmer-platformer/data-model.md - May need adjustment for Phaser entities
+  ✅ specs/001-programmer-platformer/contracts/ - May need updates for Phaser state
+  ✅ specs/001-programmer-platformer/quickstart.md - MUST be rewritten for Phaser setup
+  ✅ .github/copilot-instructions.md - Update technology stack to include Phaser.js
 
 Follow-up TODOs:
-  - Monitor code quality without mandatory testing
-  - Consider manual QA/playtesting standards if bugs increase
-  - Evaluate if testing should be re-introduced based on project complexity
+  - Re-run research phase to document Phaser.js architecture decisions
+  - Update all Phase 1 design artifacts to use Phaser APIs
+  - Verify performance targets still achievable with Phaser (bundle size, load time)
+  - Consider trade-off: development speed vs. bundle size (~1.2MB)
 
+Previous Update: 2.0.0 (2025-10-29) - Removed Test-First principle
 Date: 2025-10-29
 -->
 
@@ -42,7 +46,16 @@ The project MUST minimize external dependencies to reduce complexity, security s
 - When a dependency is unavoidable, choose the smallest, most focused library that solves the specific problem
 - Dependencies MUST be reviewed for maintenance status, security track record, and bundle size impact
 
-**Rationale:** Single-page web apps benefit from fast load times and reduced attack surface. Native browser capabilities are now powerful enough for most 2D game mechanics. Minimal dependencies also ensure the project remains maintainable long-term.
+**Exception for Game Frameworks:**
+
+- Established game frameworks (e.g., Phaser.js, PixiJS, Babylon.js) MAY be used when:
+  - The framework provides significant development velocity benefits (physics, rendering, scene management, etc.)
+  - The framework is actively maintained with strong community support
+  - The bundle size impact is acceptable for the project's performance targets
+  - The framework's architecture aligns with other constitutional principles
+- Framework choice MUST be documented in research phase with clear trade-off analysis
+
+**Rationale:** Single-page web apps benefit from fast load times and reduced attack surface. Native browser capabilities are now powerful enough for most 2D game mechanics. However, game development involves complex systems (physics, collision detection, sprite management, scene graphs) where mature frameworks can provide substantial value. Minimal dependencies ensures the project remains maintainable long-term, but pragmatic use of game frameworks balances this with development efficiency.
 
 ### II. Single-Page Architecture
 
@@ -92,6 +105,7 @@ Development MUST prioritize simplicity and "You Aren't Gonna Need It" principles
 - **Styling:** CSS3 for UI elements outside the game canvas
 - **Storage:** LocalStorage or IndexedDB for save game state (if persistence needed)
 - **Build Tools:** Minimal bundling (optional), no complex build pipelines unless justified
+- **Game Frameworks:** Established frameworks (Phaser.js, PixiJS, etc.) MAY be used per Principle I exception
 
 ### Performance Standards
 
@@ -149,4 +163,4 @@ This constitution supersedes all other development practices and guidelines. Whe
 
 This constitution is a living document. As game development patterns emerge and requirements evolve, amendments are expected. However, changes MUST be deliberate, documented, and propagated consistently throughout the project.
 
-**Version**: 2.0.0 | **Ratified**: 2025-10-29 | **Last Amended**: 2025-10-29
+**Version**: 3.0.0 | **Ratified**: 2025-10-29 | **Last Amended**: 2025-10-29

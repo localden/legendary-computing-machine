@@ -1,0 +1,394 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Programmer Adventure Platformer - Game State",
+  "description": "JSON schema documenting the Phaser.js game state structure stored in Registry",
+  "type": "object",
+  "required": [
+    "currentLevel",
+    "lives",
+    "score",
+    "health",
+    "timeRemaining",
+    "status"
+  ],
+  "properties": {
+    "currentLevel": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10,
+      "description": "Current level number (1-10)"
+    },
+    "lives": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 99,
+      "description": "Remaining lives (starts at 3)"
+    },
+    "score": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Total points from coffee cups (10 points each)"
+    },
+    "highScore": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Best score loaded from LocalStorage"
+    },
+    "health": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 3,
+      "description": "Player health (0-3 hit points)"
+    },
+    "timeRemaining": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 300000,
+      "description": "Milliseconds remaining in level (5 minutes = 300000ms)"
+    },
+    "coffeeCupsCollected": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Coffee cups collected in current level"
+    },
+    "enemiesDefeated": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Enemies stomped in current level"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["menu", "playing", "paused", "game-over", "victory"],
+      "description": "Current game flow state"
+    },
+    "levelStartTime": {
+      "type": "integer",
+      "description": "Timestamp (Date.now()) when level began"
+    },
+    "highScores": {
+      "type": "array",
+      "description": "Top 10 high scores from LocalStorage",
+      "maxItems": 10,
+      "items": {
+        "type": "object",
+        "required": ["score", "level", "date"],
+        "properties": {
+          "score": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "level": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 timestamp"
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "PlayerEntity": {
+      "type": "object",
+      "description": "Player sprite state (Phaser.Physics.Arcade.Sprite)",
+      "required": ["x", "y", "health", "lives", "velocity"],
+      "properties": {
+        "x": {
+          "type": "number",
+          "description": "World X position in pixels"
+        },
+        "y": {
+          "type": "number",
+          "description": "World Y position in pixels"
+        },
+        "health": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3
+        },
+        "lives": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "velocity": {
+          "type": "object",
+          "properties": {
+            "x": { "type": "number", "description": "Horizontal velocity (-160 to 160)" },
+            "y": { "type": "number", "description": "Vertical velocity (-330 to 1000)" }
+          }
+        },
+        "isInvincible": {
+          "type": "boolean",
+          "description": "Temporary invincibility after taking damage"
+        },
+        "invincibilityTimer": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000,
+          "description": "Milliseconds of invincibility remaining"
+        },
+        "activePowerups": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["type", "duration", "startTime"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["invincibility", "speed-boost", "double-jump", "slow-time"]
+              },
+              "duration": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Milliseconds remaining"
+              },
+              "startTime": {
+                "type": "integer",
+                "description": "Timestamp when powerup activated"
+              }
+            }
+          }
+        },
+        "isFacingRight": {
+          "type": "boolean",
+          "description": "Sprite facing direction"
+        },
+        "canDoubleJump": {
+          "type": "boolean",
+          "description": "Has double jump powerup active"
+        }
+      }
+    },
+    "EnemyEntity": {
+      "type": "object",
+      "description": "Enemy sprite state (Phaser.Physics.Arcade.Sprite)",
+      "required": ["x", "y", "type", "health", "movementPattern"],
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "type": {
+          "type": "string",
+          "enum": ["bug", "merge-conflict", "security-boss"]
+        },
+        "health": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Bug: 1, MergeConflict: 2, SecurityBoss: 10"
+        },
+        "movementPattern": {
+          "type": "string",
+          "enum": ["patrol", "chase", "stationary", "jump"]
+        },
+        "patrolLeft": {
+          "type": "number",
+          "description": "Left boundary for patrol pattern"
+        },
+        "patrolRight": {
+          "type": "number",
+          "description": "Right boundary for patrol pattern"
+        },
+        "patrolSpeed": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Bug: 40, MergeConflict: 60, SecurityBoss: 80"
+        },
+        "detectionRange": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Pixels from player to activate chase (SecurityBoss: 400)"
+        },
+        "isStompable": {
+          "type": "boolean",
+          "description": "Bug/MergeConflict: true, SecurityBoss: false"
+        }
+      }
+    },
+    "CollectibleEntity": {
+      "type": "object",
+      "description": "Coffee cup collectible (Phaser.Physics.Arcade.Sprite)",
+      "required": ["x", "y", "pointValue"],
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "pointValue": {
+          "type": "integer",
+          "const": 10,
+          "description": "All coffee cups worth 10 points"
+        },
+        "isCollected": {
+          "type": "boolean",
+          "description": "True if already collected (sprite destroyed)"
+        }
+      }
+    },
+    "PowerupEntity": {
+      "type": "object",
+      "description": "Powerup collectible (Phaser.Physics.Arcade.Sprite)",
+      "required": ["x", "y", "type", "duration"],
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "type": {
+          "type": "string",
+          "enum": [
+            "invincibility",
+            "speed-boost",
+            "double-jump",
+            "health-restore",
+            "extra-life",
+            "slow-time"
+          ]
+        },
+        "duration": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Effect duration in milliseconds (0 for instant powerups)"
+        },
+        "isCollected": {
+          "type": "boolean"
+        }
+      }
+    },
+    "LevelData": {
+      "type": "object",
+      "description": "Level geometry and entity spawn data (plain JS object, not Phaser class)",
+      "required": [
+        "id",
+        "theme",
+        "width",
+        "height",
+        "timeLimit",
+        "platforms",
+        "enemies",
+        "collectibles",
+        "powerups",
+        "closePRButton"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10
+        },
+        "theme": {
+          "type": "string",
+          "enum": ["dev-conference", "office", "coffee-shop", "sf-bay"]
+        },
+        "width": {
+          "type": "integer",
+          "const": 5000,
+          "description": "Level width in pixels (scrolling)"
+        },
+        "height": {
+          "type": "integer",
+          "const": 600,
+          "description": "Level height in pixels (viewport)"
+        },
+        "timeLimit": {
+          "type": "integer",
+          "const": 300000,
+          "description": "5 minutes in milliseconds"
+        },
+        "platforms": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["x", "y", "width", "height", "type"],
+            "properties": {
+              "x": { "type": "number" },
+              "y": { "type": "number" },
+              "width": { "type": "number", "minimum": 32 },
+              "height": { "type": "number", "minimum": 16 },
+              "type": {
+                "type": "string",
+                "enum": ["ground", "elevated", "moving"]
+              }
+            }
+          }
+        },
+        "enemies": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["type", "x", "y"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["bug", "merge-conflict", "security-boss"]
+              },
+              "x": { "type": "number" },
+              "y": { "type": "number" },
+              "patrolLeft": { "type": "number" },
+              "patrolRight": { "type": "number" }
+            }
+          }
+        },
+        "collectibles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["x", "y"],
+            "properties": {
+              "x": { "type": "number" },
+              "y": { "type": "number" }
+            }
+          }
+        },
+        "powerups": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["type", "x", "y"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "invincibility",
+                  "speed-boost",
+                  "double-jump",
+                  "health-restore",
+                  "extra-life",
+                  "slow-time"
+                ]
+              },
+              "x": { "type": "number" },
+              "y": { "type": "number" }
+            }
+          }
+        },
+        "closePRButton": {
+          "type": "object",
+          "required": ["x", "y"],
+          "properties": {
+            "x": { "type": "number" },
+            "y": { "type": "number" },
+            "width": { "type": "integer", "const": 32 },
+            "height": { "type": "integer", "const": 32 }
+          }
+        },
+        "isBossLevel": {
+          "type": "boolean",
+          "description": "True for levels 3, 6, 9"
+        },
+        "difficulty": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10,
+          "description": "Matches level ID"
+        },
+        "seed": {
+          "type": "string",
+          "description": "Random seed for procedural generation"
+        },
+        "generatedAt": {
+          "type": "integer",
+          "description": "Timestamp when level was generated"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,50 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: #1a1a2e;
+    font-family: 'Courier New', monospace;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+#game-container {
+    position: relative;
+}
+
+/* Phaser canvas will be injected here */
+canvas {
+    display: block;
+    border: 2px solid #16213e;
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+}
+
+/* HUD overlay (optional - can also use Phaser text objects) */
+.hud {
+    position: absolute;
+    top: 10px;
+    width: 100%;
+    color: #00ff00;
+    font-size: 18px;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.hud-left {
+    position: absolute;
+    left: 20px;
+    top: 20px;
+}
+
+.hud-right {
+    position: absolute;
+    right: 20px;
+    top: 20px;
+    text-align: right;
+}
