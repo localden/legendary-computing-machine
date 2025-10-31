@@ -36,15 +36,37 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
 
     static createTexture(scene, enemyData) {
         const graphics = scene.add.graphics();
-        graphics.fillStyle(enemyData.color);
-        graphics.fillRect(0, 0, enemyData.hitbox.width, enemyData.hitbox.height);
-        
-        // Add some visual details
-        graphics.fillStyle(0xFFFFFF, 0.3);
-        graphics.fillCircle(enemyData.hitbox.width / 3, enemyData.hitbox.height / 3, 2);
-        graphics.fillCircle(2 * enemyData.hitbox.width / 3, enemyData.hitbox.height / 3, 2);
-        
-        graphics.generateTexture(enemyData.textureKey, enemyData.hitbox.width, enemyData.hitbox.height);
+        const { width, height } = enemyData.hitbox;
+        // Body base
+        graphics.fillStyle(enemyData.color, 1);
+        graphics.fillRoundedRect(0, 0, width, height, 4);
+        // Outline
+        graphics.lineStyle(2, 0x000000, 0.6);
+        graphics.strokeRoundedRect(0, 0, width, height, 4);
+        // Eyes
+        graphics.fillStyle(0xffffff, 1);
+        graphics.fillCircle(width * 0.35, height * 0.35, 2.2);
+        graphics.fillCircle(width * 0.65, height * 0.35, 2.2);
+        // Pupils
+        graphics.fillStyle(0x000000, 1);
+        graphics.fillCircle(width * 0.35, height * 0.35, 1);
+        graphics.fillCircle(width * 0.65, height * 0.35, 1);
+        // "Angry" brow
+        graphics.lineStyle(1, 0x000000, 0.8);
+        graphics.beginPath();
+        graphics.moveTo(width * 0.25, height * 0.25);
+        graphics.lineTo(width * 0.45, height * 0.30);
+        graphics.moveTo(width * 0.55, height * 0.30);
+        graphics.lineTo(width * 0.75, height * 0.25);
+        graphics.strokePath();
+        // Mouth
+        graphics.lineStyle(1, 0x000000, 0.8);
+        graphics.beginPath();
+        graphics.moveTo(width * 0.30, height * 0.65);
+        graphics.lineTo(width * 0.70, height * 0.65);
+        graphics.strokePath();
+        // Texture output
+        graphics.generateTexture(enemyData.textureKey, width, height);
         graphics.destroy();
     }
 

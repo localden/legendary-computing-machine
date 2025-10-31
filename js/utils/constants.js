@@ -8,8 +8,9 @@ export const GAME_CONFIG = {
 
 export const PLAYER = {
     SPEED: 160,
-    JUMP_VELOCITY: -330,
-    DOUBLE_JUMP_VELOCITY: -280,
+    // Increased jump height for more forgiving platform reach
+    JUMP_VELOCITY: -380,
+    DOUBLE_JUMP_VELOCITY: -340,
     MAX_HEALTH: 3,
     HITBOX: { width: 16, height: 24 },
     INVINCIBILITY_DURATION: 1000,

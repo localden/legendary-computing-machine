@@ -93,37 +93,39 @@ export default class GameScene extends Phaser.Scene {
 
         // Get theme colors for cloud styling
         const themeColors = COLORS.THEMES[this.levelData.theme] || COLORS.THEMES['dev-conference'];
-        
-        // Create clouds as decorative elements
         this.clouds = this.add.group();
-        
+
         this.levelData.clouds.forEach(cloudData => {
-            // Create cloud using graphics for soft, rounded appearance
-            const cloudGraphics = this.add.graphics();
-            
-            // Draw multiple overlapping circles to create cloud shape
-            cloudGraphics.fillStyle(0xFFFFFF, cloudData.opacity);
-            
+            const g = this.add.graphics();
             const centerX = cloudData.x;
             const centerY = cloudData.y;
             const baseRadius = cloudData.height / 2;
-            
-            // Main cloud body (3 overlapping circles)
-            cloudGraphics.fillCircle(centerX, centerY, baseRadius);
-            cloudGraphics.fillCircle(centerX - baseRadius * 0.6, centerY, baseRadius * 0.8);
-            cloudGraphics.fillCircle(centerX + baseRadius * 0.6, centerY, baseRadius * 0.8);
-            
-            // Add horizontal stretch
-            cloudGraphics.fillEllipse(centerX, centerY, cloudData.width, cloudData.height * 0.6);
-            
-            // Set depth to appear behind platforms but in front of background
-            cloudGraphics.setDepth(-1);
-            
-            // Store cloud data for parallax scrolling
-            cloudGraphics.setData('parallaxSpeed', 0.3 + Math.random() * 0.3);
-            cloudGraphics.setData('initialX', centerX);
-            
-            this.clouds.add(cloudGraphics);
+
+            // Soft shadow first
+            g.fillStyle(0x000000, cloudData.opacity * 0.15);
+            g.fillEllipse(centerX + 8, centerY + 6, cloudData.width * 0.95, cloudData.height * 0.5);
+
+            // Main fluffy body: draw a cluster of circles with slight horizontal jitter
+            const puffCount = 5;
+            for (let i = 0; i < puffCount; i++) {
+                const offsetX = (i - (puffCount - 1) / 2) * baseRadius * 0.9 + Phaser.Math.Between(-4, 4);
+                const radius = baseRadius * (0.85 + Math.random() * 0.25);
+                g.fillStyle(0xffffff, cloudData.opacity * 0.9);
+                g.fillCircle(centerX + offsetX, centerY + Phaser.Math.Between(-4, 4), radius);
+            }
+
+            // Light overlay for highlight
+            g.fillStyle(0xffffff, cloudData.opacity * 0.5);
+            g.fillEllipse(centerX, centerY - 4, cloudData.width * 0.9, cloudData.height * 0.4);
+
+            // Slight bluish tint based on theme background (mix)
+            g.fillStyle(0xE6F6FF, cloudData.opacity * 0.2);
+            g.fillEllipse(centerX, centerY, cloudData.width * 0.75, cloudData.height * 0.35);
+
+            g.setDepth(-1);
+            g.setData('parallaxSpeed', 0.25 + Math.random() * 0.25);
+            g.setData('initialX', centerX);
+            this.clouds.add(g);
         });
     }
 
@@ -134,17 +136,20 @@ export default class GameScene extends Phaser.Scene {
         // Get theme colors
         const themeColors = COLORS.THEMES[this.levelData.theme] || COLORS.THEMES['dev-conference'];
 
-        // Create platforms from level data
+        // Create platforms from level data using textured tile sprites
+        // Each logical platform may be wider than the base tile; we tile multiple static sprites for better visual texture.
         this.levelData.platforms.forEach(platformData => {
-            const platform = this.add.rectangle(
-                platformData.x,
-                platformData.y,
-                platformData.width,
-                platformData.height,
-                themeColors.platform
-            );
-            this.physics.add.existing(platform, true); // true = static body
-            this.platforms.add(platform);
+            const tileWidth = 64; // Width of generated texture
+            const tilesNeeded = Math.ceil(platformData.width / tileWidth);
+            for (let i = 0; i < tilesNeeded; i++) {
+                const segmentX = platformData.x - platformData.width / 2 + (i * tileWidth) + tileWidth / 2;
+                const segmentY = platformData.y;
+                const sprite = this.add.image(segmentX, segmentY, 'platform-tile');
+                sprite.setTint(themeColors.platform);
+                // Convert to static body
+                this.physics.add.existing(sprite, true);
+                this.platforms.add(sprite);
+            }
         });
     }
 
@@ -284,29 +289,40 @@ export default class GameScene extends Phaser.Scene {
             return;
         }
 
+        const now = this.time.now;
+        const stompCooldownUntil = enemy.getData('stompCooldownUntil') || 0;
         // Check if player is stomping enemy (player is above and falling)
         const playerBottom = player.body.y + player.body.height;
         const enemyTop = enemy.body.y;
-        const isPlayerAbove = playerBottom < enemyTop + 10;
+        const isPlayerAbove = playerBottom <= enemyTop + 12;
         const isPlayerFalling = player.body.velocity.y > 0;
 
         if (isPlayerAbove && isPlayerFalling && enemy.isStompable) {
             // Player stomps enemy
             enemy.takeDamage(1);
             player.stompEnemy(enemy);
+            enemy.setData('stompCooldownUntil', now + 250);
+            if (typeof player.grantTemporaryInvincibility === 'function') {
+                player.grantTemporaryInvincibility(250);
+            }
             
             // Add score for defeating enemy
             this.scoreManager.addScore(50);
-        } else {
-            // Enemy damages player
-            enemy.dealDamage(player);
-            
-            // Screen shake on damage
-            this.cameras.main.shake(200, 0.01);
-            
-            // Red flash overlay
-            this.flashDamage();
+            return;
         }
+
+        if (now < stompCooldownUntil) {
+            return;
+        }
+
+        // Enemy damages player
+        enemy.dealDamage(player);
+
+        // Screen shake on damage
+        this.cameras.main.shake(200, 0.01);
+
+        // Red flash overlay
+        this.flashDamage();
     }
 
     flashDamage() {

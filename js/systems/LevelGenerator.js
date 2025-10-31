@@ -64,12 +64,12 @@ export default class LevelGenerator {
     generatePlatforms(levelNumber, difficulty) {
         const platforms = [];
         
-        // Player jump physics calculation
-        // With JUMP_VELOCITY = -330 and GRAVITY = 800:
-        // Max jump height ≈ 68 pixels
-        // Max horizontal distance at speed 160 ≈ 200 pixels
-        const MAX_JUMP_HEIGHT = 70;
-        const MAX_JUMP_DISTANCE = 180; // Conservative to ensure reachability
+    // Player jump physics calculation
+    // With JUMP_VELOCITY = -380 and GRAVITY = 800:
+    // Approx max jump height ≈ 83 px
+    // Safe horizontal reach at speed 160 ≈ 210 px (allow margin)
+    const MAX_JUMP_HEIGHT = 85;
+    const MAX_JUMP_DISTANCE = 200; // Conservative margin below theoretical
         
         // Ground platform (start)
         platforms.push({
@@ -81,14 +81,20 @@ export default class LevelGenerator {
         });
         
         // Calculate platform parameters based on difficulty
-        const numPlatforms = 15 + Math.floor(difficulty * 10); // 15-25 platforms
-        const minGap = 60 + difficulty * 20; // Gap increases with difficulty but stays jumpable
-        const maxGap = MAX_JUMP_DISTANCE - 40; // Leave margin for safety
-        const minHeight = 200; // Lower bound for visibility
-        const maxHeight = 500; // Keep platforms from being too high
+    const numPlatforms = 15 + Math.floor(difficulty * 10); // 15-25 platforms
+    // Make early levels more forgiving: smaller gaps. Later levels gradually increase.
+    const baseMinGap = 30; // Further reduced for denser early layout
+    const baseMaxGap = MAX_JUMP_DISTANCE - 90; // Keep generous margin
+    const minGap = baseMinGap + difficulty * 12; // 30 -> ~42 across difficulty
+    const maxGap = baseMaxGap + difficulty * 8; // Slight increase with difficulty
+    // Adjust vertical range to keep early platforms more reachable
+    const minHeight = 350; // Raise baseline so player doesn't need large upward jumps immediately
+    const maxHeight = 520; // Slightly tighter vertical band
         
-        let currentX = 500;
-        let currentY = 500;
+    // Track right edge of last platform instead of arbitrary currentX for consistent gap measurement
+    let lastPlatformRightEdge = platforms[0].x + platforms[0].width / 2; // starting ground platform center treated as base
+    let currentY = platforms[0].y; // start from ground level then adjust
+    let firstGapApplied = false;
         
         for (let i = 0; i < numPlatforms; i++) {
             // Random gap and height variation
@@ -96,8 +102,11 @@ export default class LevelGenerator {
             const heightChange = (this.random() - 0.5) * 80; // Reduced for smoother progression
             const platformWidth = 80 + this.random() * 120; // 80-200 width
             
-            // Calculate new position
-            const newX = currentX + gap + platformWidth;
+            // For first elevated platform, force a smaller gap for guaranteed reach
+            const effectiveGap = !firstGapApplied ? Math.min(gap, minGap + 10) : gap;
+            // Calculate new platform center based on right edge of previous platform
+            const newCenterX = lastPlatformRightEdge + effectiveGap + platformWidth / 2;
+            const newX = newCenterX;
             let newY = currentY + heightChange;
             
             // Ensure height change is within jump capability
@@ -120,17 +129,47 @@ export default class LevelGenerator {
                     height: 20,
                     type: 'elevated'
                 });
-                
-                currentX = newX;
+                // Update tracking values
+                lastPlatformRightEdge = newX + platformWidth / 2;
                 currentY = newY;
+                firstGapApplied = true;
             }
         }
-        
+
+        // Ensure a safe approach to the Close PR area by filling any large gaps
+        const finalPlatformX = LEVEL.WIDTH - 200;
+        const finalPlatformY = 500;
+        const finalPlatformWidth = 300;
+        const finalPlatformLeftEdge = finalPlatformX - finalPlatformWidth / 2;
+        const safeApproachGap = MAX_JUMP_DISTANCE - 20;
+        let approachRightEdge = lastPlatformRightEdge;
+        let approachY = currentY;
+
+        while (approachRightEdge + safeApproachGap < finalPlatformLeftEdge) {
+            const remaining = finalPlatformLeftEdge - (approachRightEdge + safeApproachGap);
+            const bridgeWidth = Math.max(140, Math.min(220, remaining + 80));
+            approachY = Math.min(finalPlatformY, Math.max(minHeight, approachY + 15));
+            const bridgeCenterX = approachRightEdge + safeApproachGap + bridgeWidth / 2;
+
+            platforms.push({
+                x: bridgeCenterX,
+                y: approachY,
+                width: bridgeWidth,
+                height: 20,
+                type: 'bridge'
+            });
+
+            approachRightEdge = bridgeCenterX + bridgeWidth / 2;
+        }
+
+        lastPlatformRightEdge = approachRightEdge;
+        currentY = approachY;
+
         // Final platform (for Close PR button)
         platforms.push({
-            x: LEVEL.WIDTH - 200,
-            y: 500,
-            width: 300,
+            x: finalPlatformX,
+            y: finalPlatformY,
+            width: finalPlatformWidth,
             height: 20,
             type: 'ground'
         });
@@ -155,7 +194,11 @@ export default class LevelGenerator {
         }
         
         // Regular enemy spawn
-        const numEnemies = 3 + Math.floor(difficulty * 5); // 3-8 enemies
+        let numEnemies = 3 + Math.floor(difficulty * 5); // 3-8 enemies
+        // Guarantee at least 2 enemies on level 1 for engagement
+        if (levelNumber === 1) {
+            numEnemies = Math.max(numEnemies, 2);
+        }
         
         // Skip first and last few platforms (safe zones)
         const safeZoneStart = 2;
@@ -164,20 +207,21 @@ export default class LevelGenerator {
         
         for (let i = 0; i < numEnemies && i < spawnablePlatforms.length; i++) {
             const platform = spawnablePlatforms[Math.floor(i * spawnablePlatforms.length / numEnemies)];
-            
+
             // Choose enemy type based on level
             let enemyType = 'bug';
             if (levelNumber >= 4 && this.random() > 0.5) {
                 enemyType = 'merge-conflict';
             }
-            
+
+            const halfW = platform.width / 2;
             enemies.push({
                 type: enemyType,
-                x: platform.x + platform.width / 2,
-                y: platform.y - 20,
+                x: platform.x, // center of platform
+                y: platform.y - 22,
                 pattern: enemyType === 'bug' ? 'patrol' : 'jump',
-                patrolLeft: platform.x,
-                patrolRight: platform.x + platform.width
+                patrolLeft: platform.x - halfW + 5,
+                patrolRight: platform.x + halfW - 5
             });
         }
         
@@ -187,16 +231,15 @@ export default class LevelGenerator {
     generateCollectibles(levelNumber, platforms) {
         const collectibles = [];
         
-        // Place coffee cups on most platforms
-        const numCollectibles = Math.floor(platforms.length * 0.6); // 60% of platforms
-        
+        // Reduced coffee cup density: ~35% chance per eligible platform (skip first/last)
         for (let i = 1; i < platforms.length - 1; i++) {
-            if (this.random() < 0.6) {
+            if (this.random() < 0.35) {
                 const platform = platforms[i];
+                const cupOffset = platform.height / 2 + 36;
                 collectibles.push({
                     type: 'coffee-cup',
-                    x: platform.x + platform.width / 2,
-                    y: platform.y - 30
+                    x: platform.x,
+                    y: platform.y - cupOffset
                 });
             }
         }
@@ -238,27 +281,15 @@ export default class LevelGenerator {
 
     generateClouds(levelNumber, theme) {
         const clouds = [];
-        
-        // More clouds for SF Bay theme
         const numClouds = theme === 'sf-bay' ? 15 : 8;
-        
-        // Distribute clouds across the level
         for (let i = 0; i < numClouds; i++) {
             const x = (LEVEL.WIDTH / numClouds) * i + this.random() * 300;
-            const y = 50 + this.random() * 150; // Upper portion of screen
-            const width = 60 + this.random() * 80; // 60-140 width
-            const height = 30 + this.random() * 30; // 30-60 height
-            const opacity = 0.15 + this.random() * 0.25; // 0.15-0.4 opacity
-            
-            clouds.push({
-                x: x,
-                y: y,
-                width: width,
-                height: height,
-                opacity: opacity
-            });
+            const y = 50 + this.random() * 150;
+            const width = 60 + this.random() * 80;
+            const height = 30 + this.random() * 30;
+            const opacity = 0.15 + this.random() * 0.25;
+            clouds.push({ x, y, width, height, opacity });
         }
-        
         return clouds;
     }
 

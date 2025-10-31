@@ -144,8 +144,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
             this.die();
         } else {
             // Trigger invincibility
-            this.isInvincible = true;
-            this.invincibilityTimer = PLAYER.INVINCIBILITY_DURATION;
+            this.grantTemporaryInvincibility(PLAYER.INVINCIBILITY_DURATION);
         }
     }
 
@@ -174,8 +173,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
         this.scene.registry.set('health', this.health);
         
         // Grant temporary invincibility
-        this.isInvincible = true;
-        this.invincibilityTimer = PLAYER.INVINCIBILITY_DURATION * 2;
+        this.grantTemporaryInvincibility(PLAYER.INVINCIBILITY_DURATION * 2);
     }
 
     fallIntoPit() {
@@ -201,6 +199,15 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
             const elapsed = Date.now() - powerup.startTime;
             return elapsed < powerup.duration;
         });
+    }
+
+    grantTemporaryInvincibility(duration) {
+        if (duration <= 0) {
+            return;
+        }
+
+        this.isInvincible = true;
+        this.invincibilityTimer = Math.max(this.invincibilityTimer, duration);
     }
 
     hasPowerup(type) {
