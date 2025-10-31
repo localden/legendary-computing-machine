@@ -42,6 +42,11 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
         // Store initial spawn position
         this.spawnX = x;
         this.spawnY = y;
+
+        // Attack state
+        this.lastAttackTime = 0;
+        this.attackCooldown = 300; // ms
+        this.swingSprite = null;
     }
 
     preUpdate(time, delta) {
@@ -220,5 +225,51 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
         
         const elapsed = Date.now() - powerup.startTime;
         return Math.max(0, powerup.duration - elapsed);
+    }
+
+    canAttack() {
+        return Date.now() - this.lastAttackTime >= this.attackCooldown;
+    }
+
+    performKeyboardSwing(direction = 1) {
+        if (!this.canAttack()) return false;
+        this.lastAttackTime = Date.now();
+
+        // Create swing sprite if missing
+        if (!this.swingSprite || !this.swingSprite.active) {
+            this.swingSprite = this.scene.add.image(this.x, this.y, 'player-keyboard');
+            this.swingSprite.setOrigin(0.1, 0.5);
+            this.swingSprite.setDepth(500);
+        }
+
+        // Reset position relative to player each use
+        this.swingSprite.setPosition(this.x + (direction * 12), this.y - 4);
+        this.swingSprite.setFlipX(direction < 0);
+        this.swingSprite.alpha = 1;
+        this.swingSprite.rotation = direction > 0 ? -0.6 : 0.6;
+        this.swingSprite.scale = 1;
+
+        // Tween: quick arc then fade
+        this.scene.tweens.add({
+            targets: this.swingSprite,
+            rotation: direction > 0 ? 0.8 : -0.8,
+            y: this.swingSprite.y + 4,
+            scale: 1.15,
+            duration: 140,
+            yoyo: true,
+            ease: 'Quad.Out',
+            onComplete: () => {
+                this.scene.tweens.add({
+                    targets: this.swingSprite,
+                    alpha: 0,
+                    duration: 120,
+                    onComplete: () => {
+                        // Keep sprite for reuse to avoid reallocation
+                        this.swingSprite.alpha = 0;
+                    }
+                });
+            }
+        });
+        return true;
     }
 }

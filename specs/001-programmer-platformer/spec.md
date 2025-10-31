@@ -15,6 +15,22 @@
 - Q: How do powerups activate? → A: All powerups activate immediately upon collection (automatic)
 - Q: Do players earn points for defeating enemies? → A: No, only coffee cups award points
 
+### Session 2025-10-31 (Revision)
+
+- Added a seasonal `halloween` theme and adjusted theme rotation so level 1 starts with it.
+- Introduced parallax environmental backdrop layers (far hills, mid ridges, foreground strata) behind platforms using theme land colors.
+- Adjusted platform generation to reduce early gaps, ensure end-run bridges, and raise coffee cup collectibles above platforms for visibility.
+- Modified stomp logic: forgiving vertical threshold, short post-stomp invincibility and enemy stomp cooldown to prevent immediate retaliation damage.
+- Added boss movement constraints (horizontal clamping + fall recovery) to prevent Security Boss from leaving its arena.
+- Replaced deprecated Phaser particle emitter usage (Phaser 3.60 removal) with custom tween-based impact bursts.
+- Implemented keyboard swing attack (press `E` on boss levels) – animated keyboard arc with cooldown; applies boss damage when in range.
+- Added input debug overlay toggle (`I`) for development diagnostics (shows key states, velocity, floor status).
+- Raised HUD depths and pushed backdrop layers behind gameplay to avoid occlusion.
+- Ensured level completion after boss victory uses existing `completeLevelGoal` method (fixed missing function call).
+- Coffee cups placement raised; stomp now grants score for defeating enemies (design update) – enemies award 50 points when stomped.
+
+**Spec Impact**: Requirements FR-017 (enemy score) updated; new FR entries added for E attack, debug overlay, seasonal theme, backdrop rendering, and stomp cooldown behavior.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Core Gameplay Loop (Priority: P1)
@@ -64,7 +80,7 @@ A player can encounter autonomous enemies (bugs, merge conflicts) that move on t
 
 1. **Given** a level contains enemies, **When** the level loads, **Then** enemies move autonomously along their designated paths
 2. **Given** a player collides with an enemy, **When** contact is made, **Then** the player's health decreases
-3. **Given** a player jumps and lands on top of an enemy, **When** contact is made from above, **Then** the enemy is defeated and removed from the level
+3. **Given** a player jumps and lands on top of an enemy, **When** contact is made from above, **Then** the enemy is defeated, removed from the level, and score increases by 50 points
 4. **Given** a player's health reaches zero, **When** they are hit again, **Then** they lose a life and respawn
 5. **Given** a player is viewing the game, **When** they look at the top-left corner, **Then** they see their current health meter
 
@@ -101,7 +117,8 @@ A player encounters security-themed boss battles at levels 3, 6, and 9 with uniq
 1. **Given** a player reaches level 3, 6, or 9, **When** the level loads, **Then** they encounter a larger, distinct security-themed boss enemy
 2. **Given** a player is fighting a boss, **When** they damage the boss, **Then** the boss health decreases visibly
 3. **Given** a player defeats a boss, **When** the boss health reaches zero, **Then** the level completes successfully
-4. **Given** a boss is active, **When** the player observes its behavior, **Then** the boss has unique attack patterns different from regular enemies
+4. **Given** a boss is active, **When** the player observes its behavior, **Then** the boss has unique attack patterns different from regular enemies and remains constrained to its arena platform
+5. **Given** a boss is active, **When** the player presses the E key within attack range, **Then** the player swings a keyboard and (if in range) damages the boss
 
 ---
 
@@ -129,6 +146,7 @@ A player can collect temporary powerups scattered throughout levels that provide
 ### Edge Cases
 
 - What happens when a player pauses the game? (Timer should pause as well)
+- What happens if player attempts to attack (E) outside boss range? (Keyboard swing animates but no damage applied)
 - What happens when a player tries to move beyond the level boundaries?
 - What happens if a player completes a level with 0 seconds remaining on the timer?
 - What happens when enemies collide with each other?
@@ -136,6 +154,9 @@ A player can collect temporary powerups scattered throughout levels that provide
 - What happens when a player tries to collect the same coffee cup twice?
 - What happens if a player refreshes the browser mid-game? (Progress loss is acceptable)
 - What happens when a player collects multiple powerups simultaneously? (Effects stack or most recent takes precedence)
+- What happens if player stomps enemy while already invincible? (Enemy still defeated; invincibility timer extends if shorter)
+- What happens if boss falls off platform? (Boss respawns/clamps back to nearest platform)
+- What happens if input keys fail to bind? (Developer can toggle debug overlay with I to inspect states)
 - What happens when a powerup expires while the player is mid-action (e.g., mid-jump with Stack Overflow)?
 - What happens when a player uses Git Revert powerup near a cliff edge? (Teleport should prevent falling if previous position was safe)
 
@@ -161,7 +182,8 @@ A player can collect temporary powerups scattered throughout levels that provide
 - **FR-014**: Player MUST lose a life when health reaches zero
 - **FR-015**: Enemies MUST move autonomously without player input
 - **FR-016**: Game MUST include collectible coffee cups that increase player score
-- **FR-017**: Defeating enemies MUST NOT award score points (only coffee cups increase score)
+- ~~**FR-017**: Defeating enemies MUST NOT award score points (only coffee cups increase score)~~ (Revised)
+- **FR-017 (Revised 2025-10-31)**: Defeating stompable enemies MUST award 50 score points in addition to coffee cup scoring.
 - **FR-018**: Each level MUST have a static layout generated from procedural algorithms (generated once, reused thereafter)
 - **FR-017**: Game MUST include enemy types: bugs, merge conflicts, and security bosses
 - **FR-018**: Boss battles MUST appear at levels 3, 6, and 9
@@ -176,6 +198,14 @@ A player can collect temporary powerups scattered throughout levels that provide
 - **FR-027**: Powerups MUST have visual indicators showing they are active
 - **FR-028**: Powerups MUST have limited duration (time-based expiration)
 - **FR-029**: Game MUST include the following powerup types: Stack Overflow (double jump height), Rubber Duck Debug (invincibility), Git Revert (teleport to previous position), Caffeine Rush (increased speed), Code Review (time bonus), and Pair Programming (slow enemies)
+- **FR-030**: Game MUST include a seasonal `halloween` theme as first level theme when active.
+- **FR-031**: Game MUST render layered parallax environmental backdrops (far hills, mid ridges, foreground strata) behind gameplay.
+- **FR-032**: Player stomp MUST trigger a brief invincibility window (≤300ms) and enemy stomp cooldown preventing immediate counter damage.
+- **FR-033**: Player MUST be able to initiate a keyboard swing attack with `E` during boss levels; attack has a cooldown (≥300ms).
+- **FR-034**: Boss MUST remain constrained to its arena/platform (horizontal clamp + fall recovery).
+- **FR-035**: Impact feedback MUST use tween-based sprite bursts instead of deprecated Phaser particle emitters (Phaser 3.60 compatibility).
+- **FR-036**: Game MUST provide an optional input debug overlay toggled by `I` key for development diagnostics.
+- **FR-037**: Coffee cup collectibles MUST appear elevated above their platforms for clarity (≥30px offset).
 
 ### Key Entities
 
@@ -183,11 +213,14 @@ A player can collect temporary powerups scattered throughout levels that provide
 - **Enemy (Bug)**: Standard hostile entity that moves autonomously; has position, movement pattern, and damage value (1 hit point per collision)
 - **Enemy (Merge Conflict)**: Mid-tier hostile entity with distinct behavior; has position, movement pattern, and damage value
 - **Enemy (Security Boss)**: Boss-level hostile entity with complex patterns; has position, health pool, attack patterns, and damage value
+        - Constrained to platform bounds; performs chase, jump, radial special attacks; susceptible to player E-key swing attack.
 - **Coffee Cup**: Collectible item that increases score; has position and collection state
+        - Elevated placement (platform.y - offset) for visual clarity.
 - **Powerup**: Temporary ability enhancement; has type (Stack Overflow, Rubber Duck Debug, Git Revert, Caffeine Rush, Code Review, Pair Programming), duration, effect magnitude, position, and collection state
 - **Level**: Contains layout data, enemy spawn points, collectible positions, powerup positions, platforms, hazards, and Close PR button location; has unique theme and identifier (1-10)
 - **Close PR Button**: Interactive element at level end that triggers level completion
 - **Game State**: Tracks current level, player lives, score, time remaining, game status (playing/paused/game-over/victory)
+        - Tracks seasonal theme activation flag; includes stomp cooldown/invincibility timers.
 
 ## Success Criteria *(mandatory)*
 
@@ -199,11 +232,14 @@ A player can collect temporary powerups scattered throughout levels that provide
 - **SC-004**: All 10 levels have visually distinct environments recognizable within 2 seconds of level load
 - **SC-005**: Player controls respond to keyboard input within one frame (16ms at 60fps)
 - **SC-006**: Players can distinguish between different enemy types visually within 1 second
+**SC-006a**: Players can visually identify boss attack window (keyboard swing) within first encounter.
 - **SC-007**: Game successfully runs in full-screen mode across Chrome, Firefox, Edge, and Safari (latest versions)
 - **SC-008**: 90% of playtest participants successfully understand core mechanics (movement, collection, level completion) without external instructions
 - **SC-009**: Boss battles are perceived as more challenging than regular levels by at least 80% of playtesters
 - **SC-010**: Level layouts remain identical across multiple playthroughs (static procedural generation verification)
 - **SC-011**: Players can identify which powerup they collected within 1 second of collection
+**SC-013**: Boss remains within arena bounds for ≥95% of encounter duration (no disappearance).
+**SC-014**: Keyboard swing attack registers input and completes animation within 200ms of key press.
 - **SC-012**: Powerup effects are noticeable and change gameplay in measurable ways (e.g., speed increase is visually apparent)
 
 ## Assumptions
@@ -220,3 +256,6 @@ A player can collect temporary powerups scattered throughout levels that provide
 - Powerup spawn locations and frequency are balanced to enhance gameplay without making it trivial
 - Multiple simultaneous powerup effects are allowed and stack (e.g., speed + invincibility)
 - Git Revert powerup has a reasonable history window (3-5 seconds) to prevent exploitation
+Seasonal themes can be toggled without altering underlying gameplay logic.
+Input debug overlay is only used during development; not required for players.
+Particle emitter removal persists (no fallback needed) due to Phaser 3.60 deprecation.

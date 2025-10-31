@@ -1005,6 +1005,8 @@ export default class GameScene extends Phaser.Scene {
             }
             
             if (Phaser.Input.Keyboard.JustDown(this.attackKey)) {
+                const direction = this.player.x < this.boss.x ? 1 : -1;
+                this.player.performKeyboardSwing(direction);
                 this.handlePlayerAttack();
             }
         }

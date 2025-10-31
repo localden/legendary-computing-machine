@@ -55,6 +55,31 @@ export default class BootScene extends Phaser.Scene {
     impactGraphic.generateTexture('enemy-impact', 16, 16);
     impactGraphic.destroy();
 
+        // Procedural keyboard texture for player attack
+        if (!this.textures.exists('player-keyboard')) {
+            const kb = this.make.graphics({ x: 0, y: 0, add: false });
+            kb.fillStyle(0x222222, 1);
+            kb.fillRoundedRect(0, 0, 48, 16, 3);
+            kb.lineStyle(1, 0xffffff, 0.6);
+            // Key grid
+            for (let r = 0; r < 2; r++) {
+                for (let c = 0; c < 11; c++) {
+                    kb.fillStyle(0x2f2f2f, 1);
+                    kb.fillRect(3 + c * 4, 3 + r * 6, 3, 5);
+                    kb.lineStyle(1, 0x555555, 0.7);
+                    kb.strokeRect(3 + c * 4, 3 + r * 6, 3, 5);
+                }
+            }
+            // Accent WASD keys colored
+            const accentKeys = [1,2,3,4];
+            accentKeys.forEach(idx => {
+                kb.fillStyle(0xFF6B6B, 1);
+                kb.fillRect(3 + idx * 4, 3, 3, 5);
+            });
+            kb.generateTexture('player-keyboard', 48, 16);
+            kb.destroy();
+        }
+
         // Generate all 10 levels once and store in registry
         console.log('Generating levels...');
         const levelGenerator = new LevelGenerator();
