@@ -7,6 +7,12 @@ import SecurityBoss from '../entities/SecurityBoss.js';
 import ScoreManager from '../systems/ScoreManager.js';
 import HealthManager from '../systems/HealthManager.js';
 
+const ENEMY_IMPACT_COLORS = {
+    'bug': COLORS.BUG,
+    'merge-conflict': COLORS.MERGE_CONFLICT,
+    'security-boss': COLORS.SECURITY_BOSS
+};
+
 export default class GameScene extends Phaser.Scene {
     constructor() {
         super({ key: 'GameScene' });
@@ -17,6 +23,7 @@ export default class GameScene extends Phaser.Scene {
         this.currentLevelNumber = this.registry.get('currentLevel') || 1;
         this.isPaused = false;
         this.gameStartTime = Date.now();
+        this.pauseKeyListener = null;
     }
 
     create() {
@@ -31,7 +38,7 @@ export default class GameScene extends Phaser.Scene {
         }
 
         // Fade in from black
-        this.cameras.main.fadeIn(500, 0, 0, 0);
+    this.cameras.main.fadeIn(500, 0, 0, 0);
 
         // Set world bounds
         this.physics.world.setBounds(0, 0, this.levelData.width, this.levelData.height);
@@ -43,11 +50,16 @@ export default class GameScene extends Phaser.Scene {
         // Create decorative clouds
         this.createClouds();
 
+        // Create themed environmental backdrop
+        this.createEnvironment();
+
         // Create platforms
         this.createPlatforms();
 
         // Create player
         this.createPlayer();
+
+    // (Particle system removed for Phaser 3.60 compatibility)
 
         // Create collectibles
         this.createCollectibles();
@@ -129,6 +141,67 @@ export default class GameScene extends Phaser.Scene {
         });
     }
 
+    createEnvironment() {
+        const themeColors = COLORS.THEMES[this.levelData.theme] || COLORS.THEMES['dev-conference'];
+        const landColor = themeColors.land || themeColors.platform || 0x3a2d2d;
+        const landAccent = themeColors.landAccent || themeColors.accent || landColor;
+        const baseY = this.levelData.height;
+        const hillCount = Math.ceil(this.levelData.width / 260) + 2;
+        const rng = new Phaser.Math.RandomDataGenerator([this.levelData.id || 0, this.currentLevelNumber]);
+
+    const farLayer = this.add.graphics();
+    farLayer.setDepth(-100);
+        farLayer.setScrollFactor(0.25);
+        farLayer.setAlpha(0.6);
+        farLayer.fillStyle(landAccent, 1);
+        for (let i = -1; i < hillCount; i++) {
+            const hillWidth = rng.between(320, 460);
+            const hillHeight = rng.between(160, 240);
+            const centerX = i * 260 + rng.between(-60, 120);
+            const centerY = baseY - 160 - rng.between(40, 120);
+            farLayer.fillEllipse(centerX, centerY, hillWidth, hillHeight);
+        }
+
+    const midLayer = this.add.graphics();
+    midLayer.setDepth(-90);
+        midLayer.setScrollFactor(0.45);
+        midLayer.setAlpha(0.75);
+        midLayer.fillStyle(landColor, 1);
+        for (let i = -1; i < hillCount; i++) {
+            const ridgeWidth = rng.between(260, 340);
+            const ridgeHeight = rng.between(120, 180);
+            const baseX = i * 240 + rng.between(-40, 40);
+            const topY = baseY - rng.between(120, 200);
+            midLayer.fillTriangle(
+                baseX - ridgeWidth / 2,
+                baseY,
+                baseX,
+                topY,
+                baseX + ridgeWidth / 2,
+                baseY
+            );
+        }
+
+    const foregroundLayer = this.add.graphics();
+    foregroundLayer.setDepth(-80);
+        foregroundLayer.setScrollFactor(0.8);
+        foregroundLayer.setAlpha(0.85);
+        foregroundLayer.fillStyle(landColor, 1);
+        foregroundLayer.fillRect(0, baseY - 80, this.levelData.width, 160);
+        foregroundLayer.fillStyle(landAccent, 0.35);
+        const strataCount = 6;
+        for (let i = 0; i < strataCount; i++) {
+            const offsetY = baseY - 80 + i * 12;
+            foregroundLayer.fillRect(0, offsetY, this.levelData.width, 4);
+        }
+        this.environmentLayers = [farLayer, midLayer, foregroundLayer];
+        this.environmentLayers.forEach(layer => {
+            if (layer && layer.depth !== undefined) {
+                this.children.sendToBack(layer);
+            }
+        });
+    }
+
     createPlatforms() {
         // Create platform group
         this.platforms = this.physics.add.staticGroup();
@@ -195,6 +268,8 @@ export default class GameScene extends Phaser.Scene {
             this
         );
     }
+
+    // createEffects removed (Phaser 3.60: ParticleEmitterManager deprecated). Effects now done via manual sprites.
 
     collectCollectible(player, collectible) {
         collectible.collect(player);
@@ -275,11 +350,14 @@ export default class GameScene extends Phaser.Scene {
 
         // Check if it's a boss enemy
         const isBoss = enemy.enemyType === 'security-boss';
+        const themeColors = COLORS.THEMES[this.levelData.theme] || COLORS.THEMES['dev-conference'];
+        const impactColor = ENEMY_IMPACT_COLORS[enemy.enemyType] || themeColors.accent;
         
         // Bosses are not stompable - they can only be damaged by attacks
         if (isBoss) {
             // Boss always damages player on contact
             enemy.dealDamage(player);
+            this.spawnEnemyImpact(player.x, player.y, impactColor, 18);
             
             // Screen shake on damage
             this.cameras.main.shake(200, 0.01);
@@ -305,6 +383,7 @@ export default class GameScene extends Phaser.Scene {
             if (typeof player.grantTemporaryInvincibility === 'function') {
                 player.grantTemporaryInvincibility(250);
             }
+            this.spawnEnemyImpact(enemy.x, enemy.y, impactColor, 22);
             
             // Add score for defeating enemy
             this.scoreManager.addScore(50);
@@ -317,12 +396,52 @@ export default class GameScene extends Phaser.Scene {
 
         // Enemy damages player
         enemy.dealDamage(player);
+        this.spawnEnemyImpact(player.x, player.y + player.body.height * 0.3, themeColors.accent, 14);
 
         // Screen shake on damage
         this.cameras.main.shake(200, 0.01);
 
         // Red flash overlay
         this.flashDamage();
+    }
+
+    spawnEnemyImpact(x, y, tint, count) {
+        const pieces = count || 12;
+        const color = tint || 0xffffff;
+        for (let i = 0; i < pieces; i++) {
+            const angle = (Math.PI * 2 * i) / pieces + Phaser.Math.FloatBetween(-0.25, 0.25);
+            const speed = Phaser.Math.Between(80, 260);
+            const life = Phaser.Math.Between(200, 420);
+            const scaleStart = Phaser.Math.FloatBetween(0.5, 1);
+            const dx = Math.cos(angle) * speed * (life / 1000);
+            const dy = Math.sin(angle) * speed * (life / 1000) * 0.6; // slight flatten
+
+            // Use a lightweight Graphics -> texture once then reuse via image clones
+            if (!this.textures.exists('impact-bit')) {
+                const g = this.add.graphics();
+                g.fillStyle(0xffffff, 1);
+                g.fillCircle(4, 4, 4);
+                g.generateTexture('impact-bit', 8, 8);
+                g.destroy();
+            }
+
+            const sprite = this.add.image(x, y, 'impact-bit');
+            sprite.setTint(color);
+            sprite.setDepth(150);
+            sprite.setScale(scaleStart);
+
+            this.tweens.add({
+                targets: sprite,
+                x: x + dx,
+                y: y + dy + Phaser.Math.Between(-10, 10),
+                alpha: 0,
+                scale: 0,
+                rotation: Phaser.Math.FloatBetween(-Math.PI, Math.PI),
+                ease: 'Cubic.Out',
+                duration: life,
+                onComplete: () => sprite.destroy()
+            });
+        }
     }
 
     flashDamage() {
@@ -457,6 +576,7 @@ export default class GameScene extends Phaser.Scene {
         // HUD container (fixed to camera)
         this.hudGraphics = this.add.graphics();
         this.hudGraphics.setScrollFactor(0);
+    this.hudGraphics.setDepth(1000);
 
         // Lives display
         this.livesText = this.add.text(20, 20, '', {
@@ -466,6 +586,7 @@ export default class GameScene extends Phaser.Scene {
             fontStyle: 'bold'
         });
         this.livesText.setScrollFactor(0);
+        this.livesText.setDepth(1001);
 
         // Health display
         this.healthText = this.add.text(20, 50, '', {
@@ -474,6 +595,7 @@ export default class GameScene extends Phaser.Scene {
             fontFamily: 'Courier New'
         });
         this.healthText.setScrollFactor(0);
+        this.healthText.setDepth(1001);
 
         // Score display
         this.scoreText = this.add.text(this.cameras.main.width - 20, 20, '', {
@@ -484,6 +606,7 @@ export default class GameScene extends Phaser.Scene {
         });
         this.scoreText.setOrigin(1, 0);
         this.scoreText.setScrollFactor(0);
+        this.scoreText.setDepth(1001);
 
         // Level display
         this.levelText = this.add.text(this.cameras.main.width - 20, 50, '', {
@@ -493,6 +616,7 @@ export default class GameScene extends Phaser.Scene {
         });
         this.levelText.setOrigin(1, 0);
         this.levelText.setScrollFactor(0);
+        this.levelText.setDepth(1001);
 
         // Timer display
         this.timerText = this.add.text(this.cameras.main.width / 2, 20, '', {
@@ -503,6 +627,7 @@ export default class GameScene extends Phaser.Scene {
         });
         this.timerText.setOrigin(0.5, 0);
         this.timerText.setScrollFactor(0);
+        this.timerText.setDepth(1001);
 
         // Update HUD
         this.updateHUD();
@@ -520,6 +645,10 @@ export default class GameScene extends Phaser.Scene {
     }
 
     setupInput() {
+        if (this.keys && this.pauseKeyListener && this.keys.p) {
+            this.keys.p.off('down', this.pauseKeyListener);
+        }
+
         // Cursor keys
         this.cursors = this.input.keyboard.createCursorKeys();
 
@@ -531,12 +660,19 @@ export default class GameScene extends Phaser.Scene {
             d: this.input.keyboard.addKey('D'),
             space: this.input.keyboard.addKey('SPACE'),
             p: this.input.keyboard.addKey('P'),
-            r: this.input.keyboard.addKey('R')
+            r: this.input.keyboard.addKey('R'),
+            i: this.input.keyboard.addKey('I')
         };
 
         // Pause key
-        this.keys.p.on('down', () => {
+        this.pauseKeyListener = () => {
             this.togglePause();
+        };
+        this.keys.p.on('down', this.pauseKeyListener);
+
+        // Input debug toggle
+        this.keys.i.on('down', () => {
+            this.toggleInputDebug();
         });
     }
 
@@ -723,8 +859,8 @@ export default class GameScene extends Phaser.Scene {
                 duration: 500,
                 onComplete: () => {
                     victoryText.destroy();
-                    // Level completion
-                    this.completeLevel();
+                    // Level completion (reuse standard goal logic)
+                    this.completeLevelGoal();
                 }
             });
         });
@@ -853,10 +989,13 @@ export default class GameScene extends Phaser.Scene {
         }
 
         // Player movement
-        const isLeftDown = this.cursors.left.isDown || this.keys.a.isDown;
-        const isRightDown = this.cursors.right.isDown || this.keys.d.isDown;
-        const isJumpPressed = Phaser.Input.Keyboard.JustDown(this.cursors.space) || 
-                              Phaser.Input.Keyboard.JustDown(this.keys.w);
+    const justDown = (key) => key && Phaser.Input.Keyboard.JustDown(key);
+    const isLeftDown = (this.cursors.left && this.cursors.left.isDown) || this.keys.a.isDown;
+    const isRightDown = (this.cursors.right && this.cursors.right.isDown) || this.keys.d.isDown;
+    const isJumpPressed = justDown(this.cursors.space) ||
+                  justDown(this.cursors.up) ||
+                  justDown(this.keys.space) ||
+                  justDown(this.keys.w);
 
         // Check for attack input if boss is present
         if (this.boss && this.boss.active) {
@@ -883,7 +1022,38 @@ export default class GameScene extends Phaser.Scene {
             this.player.jump();
         }
 
+        // Update input debug overlay if active
+        if (this.inputDebugText && this.inputDebugText.active) {
+            this.inputDebugText.setText(
+                [
+                    'INPUT DEBUG',
+                    `Left: ${isLeftDown}`,
+                    `Right: ${isRightDown}`,
+                    `Jump buf: ${isJumpPressed}`,
+                    `VelocityX: ${Math.round(this.player.body.velocity.x)}`,
+                    `OnFloor: ${this.player.body.onFloor()}`
+                ].join('\n')
+            );
+        }
+
         // Update HUD
         this.updateHUD();
     }
+
+    toggleInputDebug() {
+        if (this.inputDebugText && this.inputDebugText.active) {
+            this.inputDebugText.destroy();
+            this.inputDebugText = null;
+            return;
+        }
+        this.inputDebugText = this.add.text(10, this.cameras.main.height - 110, 'INPUT DEBUG', {
+            fontSize: '14px',
+            fill: '#FFFFFF',
+            fontFamily: 'Courier New'
+        });
+        this.inputDebugText.setScrollFactor(0);
+        this.inputDebugText.setDepth(2000);
+    }
+
+    // Removed ensureInputBindings auto-rebinding (not needed, caused potential confusion)
 }

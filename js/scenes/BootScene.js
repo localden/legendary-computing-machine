@@ -46,6 +46,15 @@ export default class BootScene extends Phaser.Scene {
         g.generateTexture('platform-tile', 64, 20);
         g.destroy();
 
+    // Lightweight particle texture for collisions
+    const impactGraphic = this.make.graphics({ x: 0, y: 0, add: false });
+    impactGraphic.fillStyle(0xffffff, 1);
+    impactGraphic.fillCircle(8, 8, 8);
+    impactGraphic.fillStyle(0xfff1b5, 0.8);
+    impactGraphic.fillCircle(8, 8, 4);
+    impactGraphic.generateTexture('enemy-impact', 16, 16);
+    impactGraphic.destroy();
+
         // Generate all 10 levels once and store in registry
         console.log('Generating levels...');
         const levelGenerator = new LevelGenerator();

@@ -75,25 +75,40 @@ export const COLORS = {
     
     // Theme colors for different level environments
     THEMES: {
+        'halloween': {
+            background: 0x1b1425,
+            platform: 0x3c1a4f,
+            accent: 0xff7b00,
+            land: 0x241433,
+            landAccent: 0x311a44
+        },
         'dev-conference': {
             background: 0x2C3E50,
             platform: 0x34495E,
-            accent: 0x3498DB
+            accent: 0x3498DB,
+            land: 0x1f2a38,
+            landAccent: 0x223042
         },
         'office-buildings': {
             background: 0x2C2C2C,
             platform: 0x4A4A4A,
-            accent: 0x7F8C8D
+            accent: 0x7F8C8D,
+            land: 0x1f1f1f,
+            landAccent: 0x323232
         },
         'sf-bay': {
             background: 0x1ABC9C,
             platform: 0x16A085,
-            accent: 0xF39C12
+            accent: 0xF39C12,
+            land: 0x0f6b63,
+            landAccent: 0x0b5048
         },
         'coffee-shops': {
             background: 0x6F4E37,
             platform: 0x8B4513,
-            accent: 0xCD853F
+            accent: 0xCD853F,
+            land: 0x5a3b2c,
+            landAccent: 0x3d291c
         }
     }
 };

@@ -102,6 +102,8 @@ export default class SecurityBoss extends Enemy {
         if (this.player && time - this.lastAttackTime > this.attackCooldown) {
             this.attemptSpecialAttack(time);
         }
+
+        this.constrainToPlatform();
     }
 
     setPlayer(player) {
@@ -132,6 +134,46 @@ export default class SecurityBoss extends Enemy {
             }
         } else {
             this.body.setVelocityX(0);
+        }
+    }
+
+    constrainToPlatform() {
+        // Keep boss from walking off last known platform bounds if available
+        if (!this.body || !this.scene.platforms) return;
+        // Find closest platform under/near boss (simple search)
+        const platforms = this.scene.platforms.getChildren ? this.scene.platforms.getChildren() : [];
+        let closest = null;
+        let minDist = Infinity;
+        platforms.forEach(p => {
+            const dy = Math.abs(p.y - this.y);
+            if (dy < 120) { // vertical proximity threshold
+                const dist = Math.abs(p.x - this.x);
+                if (dist < minDist) {
+                    minDist = dist;
+                    closest = p;
+                }
+            }
+        });
+        if (closest) {
+            const halfWidth = (closest.displayWidth || closest.width || 64) / 2;
+            const leftBound = closest.x - halfWidth + 10;
+            const rightBound = closest.x + halfWidth - 10;
+            if (this.x < leftBound) {
+                this.x = leftBound;
+                this.body.setVelocityX(Math.abs(this.body.velocity.x));
+            } else if (this.x > rightBound) {
+                this.x = rightBound;
+                this.body.setVelocityX(-Math.abs(this.body.velocity.x));
+            }
+        }
+
+        // Recover if fallen below level floor
+        if (this.y > this.scene.levelData.height + 50) {
+            // Respawn boss at initial spawn or closest platform
+            const spawnY = (closest ? closest.y - 60 : this.scene.levelData.platforms[0].y - 60);
+            const spawnX = (closest ? closest.x : this.scene.levelData.platforms[0].x);
+            this.setPosition(spawnX, spawnY);
+            this.body.setVelocity(0, 0);
         }
     }
 

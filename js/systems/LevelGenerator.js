@@ -2,7 +2,7 @@ import { LEVEL, ENEMIES } from '../utils/constants.js';
 
 export default class LevelGenerator {
     constructor() {
-        this.themes = ['dev-conference', 'office-buildings', 'sf-bay', 'coffee-shops'];
+    this.themes = ['halloween', 'dev-conference', 'office-buildings', 'sf-bay', 'coffee-shops'];
         this.seed = 12345; // Fixed seed for reproducible generation
     }
 
@@ -19,7 +19,7 @@ export default class LevelGenerator {
 
     generateLevel(levelNumber) {
         // Assign theme cyclically
-        const theme = this.themes[(levelNumber - 1) % this.themes.length];
+    const theme = this.themes[(levelNumber - 1) % this.themes.length];
         
         // Difficulty increases with level number
         const difficulty = levelNumber / 10;
